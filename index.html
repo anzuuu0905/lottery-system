@@ -204,23 +204,6 @@
             color: #999;
         }
 
-        .reset-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.1);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            color: #666;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .reset-button:hover {
-            background: rgba(0, 0, 0, 0.2);
-        }
 
         @media (max-width: 480px) {
             .container {
@@ -243,7 +226,6 @@
 </head>
 <body>
     <div class="container">
-        <button class="reset-button" onclick="resetLottery()" style="display: none;">リセット</button>
         <h1>🎯 抽選システム</h1>
         <p class="subtitle">
             ボタンを押して抽選！<br>
@@ -291,10 +273,8 @@
         function showPreviousResult(isWin, playDate) {
             const button = document.getElementById('lotteryBtn');
             const result = document.getElementById('result');
-            const resetBtn = document.querySelector('.reset-button');
             
             button.style.display = 'none';
-            resetBtn.style.display = 'block';
             
             if (isWin) {
                 result.innerHTML = `
@@ -372,7 +352,6 @@
                 
                 result.classList.add('show');
                 button.style.display = 'none';
-                document.querySelector('.reset-button').style.display = 'block';
                 updateTimestamp(now);
                 hasPlayed = true;
                 
@@ -413,13 +392,6 @@
             timestamp.textContent = date.toLocaleString('ja-JP', options);
         }
 
-        function resetLottery() {
-            if (confirm('履歴をリセットしますか？（デバッグ用）')) {
-                localStorage.removeItem('simpleLotteryPlay');
-                localStorage.removeItem('simpleLotteryResult');
-                location.reload();
-            }
-        }
 
         window.onload = function() {
             checkIfAlreadyPlayed();
