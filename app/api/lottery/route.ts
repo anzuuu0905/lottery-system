@@ -1,33 +1,22 @@
+import { kv } from '@vercel/kv'
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import { join } from 'path'
-
-const dataPath = join(process.cwd(), 'data', 'lottery.json')
 
 export async function POST(request: NextRequest) {
   try {
     const { isWin, timestamp, winRate } = await request.json()
     
-    // 現在のデータを読み込み
-    let data
-    try {
-      const fileContents = await fs.readFile(dataPath, 'utf8')
-      data = JSON.parse(fileContents)
-    } catch (error) {
-      // ファイルが存在しない場合は初期データ
-      data = { participants: 0, winners: 0, winnersList: [] }
-    }
+    // 現在の統計を取得
+    const currentParticipants = Number(await kv.get('lottery:participants') || 0)
+    const currentWinners = Number(await kv.get('lottery:winners') || 0)
+    const currentWinnersList = await kv.get('lottery:winners_list') || []
     
     // 新しい統計を計算
-    const newParticipants = data.participants + 1
-    const newWinners = data.winners + (isWin ? 1 : 0)
+    const newParticipants = currentParticipants + 1
+    const newWinners = currentWinners + (isWin ? 1 : 0)
     
-    // データを更新
-    const updatedData = {
-      participants: newParticipants,
-      winners: newWinners,
-      winnersList: data.winnersList || []
-    }
+    // 統計を更新
+    await kv.set('lottery:participants', newParticipants)
+    await kv.set('lottery:winners', newWinners)
     
     // 当選者の場合は詳細データも記録
     if (isWin) {
@@ -36,11 +25,12 @@ export async function POST(request: NextRequest) {
         participantNumber: newParticipants,
         winRate
       }
-      updatedData.winnersList.push(winnerData)
+      
+      // 当選者リストを更新
+      const updatedWinnersList = Array.isArray(currentWinnersList) ? 
+        [...currentWinnersList, winnerData] : [winnerData]
+      await kv.set('lottery:winners_list', updatedWinnersList)
     }
-    
-    // ファイルに保存
-    await fs.writeFile(dataPath, JSON.stringify(updatedData, null, 2))
     
     return NextResponse.json({
       participants: newParticipants,

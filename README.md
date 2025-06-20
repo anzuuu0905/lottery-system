@@ -1,4 +1,4 @@
-# 🎯 ツール制作抽選システム
+# 🎯 ツール制作抽選システム - Vercel版
 
 動的確率システムを使用した抽選アプリケーション。参加者が増えるほど当選確率が下がります。
 
@@ -7,11 +7,11 @@
 - ✨ **動的確率調整**: 100% → 5%へ段階的に確率が下がる
 - 📊 **リアルタイム統計**: 参加者数・当選者数・現在の当選確率を表示
 - 🏆 **当選者リスト**: 当選者の詳細履歴（日時・参加番号・当選確率）
-- 📄 **GitHub API**: JSONファイルでデータ永続化
+- 🗄️ **Vercel KV**: 高速なKey-Valueデータベース
 - 🎨 **アニメーション**: 当選時の紙吹雪エフェクト
 - 📱 **レスポンシブ**: モバイル対応
 - 🔒 **重複防止**: localStorage使用で1人1回限り
-- 🆓 **完全無料**: GitHub Pages + GitHub API
+- 🚀 **超高速**: Vercel Edge Runtime
 
 ## 🎲 確率システム
 
@@ -24,106 +24,114 @@
 
 計算式: `Math.max(0.05, Math.pow(0.5, participants))`
 
-## 🚀 セットアップ手順
+## 🚀 Vercelデプロイ手順（超簡単！）
 
-### 1. GitHub Token作成
-1. [GitHub Personal Access Tokens](https://github.com/settings/tokens) にアクセス
-2. 「Generate new token (classic)」をクリック
-3. Note: `Lottery System Token`
-4. Expiration: お好みで設定
-5. スコープ: `public_repo` にチェック
-6. 「Generate token」をクリック
-7. **トークンをコピー**（画面を閉じると二度と見れません）
+### 1. Vercelでデプロイ
+1. [Vercel](https://vercel.com) にアクセス
+2. 「Import Project」をクリック
+3. GitHub: `https://github.com/anzuuu0905/lottery-system`
+4. 「Deploy」をクリック
+5. **完了！** 🎉
 
-### 2. 設定ファイル更新
-`index.html` の以下の部分を変更：
+### 2. Vercel KV設定（1分で完了）
+1. プロジェクトダッシュボード → Storage タブ
+2. 「Create Database」→「KV」
+3. データベース名: `lottery-kv`
+4. 「Create」をクリック
+5. 環境変数が**自動設定**される
 
-```javascript
-// 変更前
-const API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/data/lottery.json';
-const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN';
-
-// 変更後
-const API_BASE = 'https://api.github.com/repos/anzuuu0905/lottery-system/contents/data/lottery.json';
-const GITHUB_TOKEN = 'ghp_xxxxxxxxxxxxxxxxxx'; // 作成したトークン
-```
-
-### 3. GitHub Pages有効化
-1. [リポジトリ](https://github.com/anzuuu0905/lottery-system) → Settings → Pages
-2. Source: 「GitHub Actions」を選択
-3. 自動でワークフローが実行される
-
-### 4. デプロイ完了確認
-- URL: https://anzuuu0905.github.io/lottery-system/
-- 抽選機能とデータ保存をテスト
+### 3. 即座に利用開始
+- デプロイURL: `https://lottery-system-xxx.vercel.app`
+- 設定は**一切不要**
+- データベースも**自動で使える**
 
 ## 🛠️ ローカル開発
 
-1. リポジトリをクローン:
 ```bash
+# クローン
 git clone https://github.com/anzuuu0905/lottery-system.git
 cd lottery-system
+
+# 依存関係インストール
+npm install
+
+# 開発サーバー起動
+npm run dev
 ```
 
-2. `index.html` をブラウザで開く
+ブラウザで `http://localhost:3000` を開く
 
 ## 📊 データ構造
 
-### 保存場所
-`/data/lottery.json` - GitHubリポジトリ内
+### Vercel KV (Key-Value Store)
+- `lottery:participants`: 総参加者数
+- `lottery:winners`: 総当選者数  
+- `lottery:winners_list`: 当選者データの配列
 
-### データ形式
+### 当選者データ形式
 ```json
-{
-  "participants": 5,
-  "winners": 2,
-  "winnersList": [
-    {
-      "timestamp": "2025-06-20T12:30:15.000Z",
-      "participantNumber": 1,
-      "winRate": 1.0
-    },
-    {
-      "timestamp": "2025-06-20T14:45:22.000Z",
-      "participantNumber": 4,
-      "winRate": 0.125
-    }
-  ]
-}
+[
+  {
+    "timestamp": "2025-06-20T12:30:15.000Z",
+    "participantNumber": 1,
+    "winRate": 1.0
+  },
+  {
+    "timestamp": "2025-06-20T14:45:22.000Z", 
+    "participantNumber": 4,
+    "winRate": 0.125
+  }
+]
 ```
 
 ## 🔧 カスタマイズ
 
 ### 確率調整
-`index.html` の `MIN_WIN_RATE` と計算式を変更:
+`app/page.tsx` の `MIN_WIN_RATE` を変更:
 
-```javascript
-const MIN_WIN_RATE = 0.05; // 最終確率 (5%)
+```typescript
+const MIN_WIN_RATE = 0.05 // 最終確率 (5%)
 
 // 確率計算式 (現在: 半分ずつ減少)
-const decayFactor = Math.pow(0.5, currentStats.participants);
+const decayFactor = Math.pow(0.5, stats.participants)
 ```
 
 ### デザイン変更
-`index.html` 内のCSSセクションを編集
+`app/page.module.css` でスタイル編集
 
 ## 📝 使用方法
 
 1. **参加者**: サイトにアクセス → 「抽選する」ボタンクリック
 2. **結果確認**: 当選/はずれの結果とタイムスタンプが表示
-3. **当選者リスト**: 統計エリアの「当選者リスト表示」ボタンで履歴確認
+3. **当選者リスト**: モーダルで詳細履歴を確認
 4. **スクリーンショット**: 当選者は結果画面をスクショして送信
+
+## 💰 料金
+
+- **Vercel**: 無料プラン（月100GB転送まで）
+- **Vercel KV**: 無料プラン（30,000リクエスト/月）
+- **抽選システム程度の利用**: **完全無料**
+
+## 🚀 技術スタック
+
+- **フロントエンド**: Next.js 14 + React 18 + TypeScript
+- **スタイリング**: CSS Modules
+- **データベース**: Vercel KV (Redis互換)
+- **デプロイ**: Vercel (Edge Runtime)
+- **API**: Next.js API Routes
 
 ## 🔒 セキュリティ
 
-- GitHubトークンは最小権限 (`public_repo`) で作成
-- クライアントサイドでの簡易的な重複防止
-- データはGitHubの公開リポジトリに保存
+- サーバーサイドでデータ処理
+- Vercel KV は内部ネットワーク経由
+- クライアントサイドでの簡易重複防止
+- HTTPS強制
 
 ## 📞 サポート
 
 - リポジトリ: https://github.com/anzuuu0905/lottery-system
-- Issues: バグ報告や機能要望はIssuesにて
+- Issues: バグ報告や機能要望
+- Vercel Docs: https://vercel.com/docs
 
 ## 📄 ライセンス
 

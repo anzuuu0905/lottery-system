@@ -6,10 +6,17 @@ import styles from './page.module.css'
 interface Stats {
   participants: number
   winners: number
+  winnersList: WinnerData[]
+}
+
+interface WinnerData {
+  timestamp: string
+  participantNumber: number
+  winRate: number
 }
 
 export default function Home() {
-  const [stats, setStats] = useState<Stats>({ participants: 0, winners: 0 })
+  const [stats, setStats] = useState<Stats>({ participants: 0, winners: 0, winnersList: [] })
   const [currentWinRate, setCurrentWinRate] = useState(1.0)
   const [hasPlayed, setHasPlayed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
