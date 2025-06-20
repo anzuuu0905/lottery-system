@@ -46,7 +46,7 @@
 
         .subtitle {
             color: #666;
-            margin-bottom: 40px;
+            margin-bottom: 60px;
             font-size: 16px;
             line-height: 1.6;
         }
@@ -244,15 +244,11 @@
 <body>
     <div class="container">
         <button class="reset-button" onclick="resetLottery()" style="display: none;">リセット</button>
-        <h1>🎯 ツール制作抽選</h1>
+        <h1>🎯 抽選システム</h1>
         <p class="subtitle">
             ボタンを押して抽選！<br>
             当選したらスクショを撮って送ってください
         </p>
-        
-        <div class="info">
-            当選確率: 5%
-        </div>
         
         <button class="lottery-button" onclick="startLottery()" id="lotteryBtn">
             抽選する
@@ -266,7 +262,17 @@
     </div>
 
     <script>
-        const WIN_RATE = 0.05; // 5%の当選確率
+        const WIN_RATE = 0.10; // 10%の当選確率（10回に1回）
+        
+        // テスト用：コンソールで確率を確認
+        function testProbability(times = 100) {
+            let wins = 0;
+            for (let i = 0; i < times; i++) {
+                if (Math.random() < WIN_RATE) wins++;
+            }
+            console.log(`${times}回中${wins}回当選 (${(wins/times*100).toFixed(1)}%)`);
+        }
+        console.log('確率テスト: testProbability() をコンソールで実行してください');
         let hasPlayed = false;
 
         function checkIfAlreadyPlayed() {
