@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ツール制作抽選システム - Firebase版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 60px 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 32px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-item {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .lottery-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .lottery-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .lottery-button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .lottery-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .lottery-button:active {
+            transform: translateY(-1px);
+        }
+
+        .lottery-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            margin-top: 40px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .spinning {
+            animation: spin 0.5s ease-in-out;
+        }
+
+        @keyframes spin {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(0.8) rotate(180deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+
+        .result {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s ease;
+        }
+
+        .result.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .result.win {
+            animation: winAnimation 1s ease;
+        }
+
+        @keyframes winAnimation {
+            0% { transform: scale(0.5) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(180deg); }
+            100% { transform: scale(1) rotate(360deg); }
+        }
+
+        .win-text {
+            font-size: 72px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .lose-text {
+            font-size: 60px;
+            font-weight: 700;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            font-size: 18px;
+            color: #666;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .win-message {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            animation: confettiFall 3s ease-in-out;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-50px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(650px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .timestamp {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: #999;
+            z-index: 1;
+        }
+
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        .reset-button:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .loading {
+            font-size: 14px;
+            color: #999;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .win-text {
+                font-size: 48px;
+            }
+            
+            .lose-text {
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="reset-button" onclick="resetLottery()" style="display: none;">リセット</button>
+        <h1>🎯 ツール制作抽選</h1>
+        <p class="subtitle">
+            参加者が増えるほど当選確率が下がります<br>
+            当選したらスクショを撮って送ってください
+        </p>
+        
+        <div class="stats" id="stats">
+            <div class="loading">データ読み込み中...</div>
+        </div>
+        
+        <button class="lottery-button" onclick="startLottery()" id="lotteryBtn" disabled>
+            読み込み中...
+        </button>
+        
+        <div class="result-container" id="resultContainer">
+            <div class="result" id="result"></div>
+        </div>
+        
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // !!!! ここにFirebaseの設定を入力してください !!!!
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com/",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Firebase初期化
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getDatabase, ref, push, onValue, set } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let hasPlayed = false;
+        let currentStats = { participants: 0, winners: 0 };
+        let currentWinRate = 1.0; // 100%からスタート
+        const MIN_WIN_RATE = 0.05; // 最終的に5%
+
+        // データベースの統計を監視
+        const statsRef = ref(database, 'lottery/stats');
+        onValue(statsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                currentStats = data;
+            }
+            updateStats();
+            updateWinRate();
+            
+            // ボタンを有効化
+            const button = document.getElementById('lotteryBtn');
+            if (!hasPlayed) {
+                button.disabled = false;
+                button.textContent = '抽選する';
+            }
+        });
+
+        function updateStats() {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stats-item">総参加者数: ${currentStats.participants}人</div>
+                <div class="stats-item">当選者数: ${currentStats.winners}人</div>
+                <div class="stats-item">現在の当選確率: ${Math.round(currentWinRate * 100)}%</div>
+            `;
+        }
+
+        function updateWinRate() {
+            // 参加者数に応じて確率を調整（100% → 5%へ段階的に）
+            if (currentStats.participants === 0) {
+                currentWinRate = 1.0; // 最初は100%
+            } else {
+                // 参加者数が増えるほど確率が下がる（指数関数的）
+                const decayFactor = Math.pow(0.5, currentStats.participants);
+                currentWinRate = Math.max(MIN_WIN_RATE, decayFactor);
+            }
+        }
+
+        function checkIfAlreadyPlayed() {
+            const lastPlay = localStorage.getItem('lastLotteryPlay');
+            const lastResult = localStorage.getItem('lastLotteryResult');
+            
+            if (lastPlay) {
+                const lastPlayDate = new Date(lastPlay);
+                hasPlayed = true;
+                showPreviousResult(lastResult === 'win', lastPlayDate);
+                return true;
+            }
+            return false;
+        }
+
+        function showPreviousResult(isWin, playDate) {
+            const button = document.getElementById('lotteryBtn');
+            const result = document.getElementById('result');
+            const resetBtn = document.querySelector('.reset-button');
+            
+            button.style.display = 'none';
+            resetBtn.style.display = 'block';
+            
+            if (isWin) {
+                result.innerHTML = `
+                    <div>
+                        <div class="win-text">当選！</div>
+                        <p class="message win-message">
+                            おめでとうございます！🎉<br>
+                            このスクショを送ってください
+                        </p>
+                    </div>
+                `;
+            } else {
+                result.innerHTML = `
+                    <div>
+                        <div class="lose-text">はずれ</div>
+                        <p class="message">
+                            残念でした...<br>
+                            また次回チャレンジしてください！
+                        </p>
+                    </div>
+                `;
+            }
+            
+            result.classList.add('show');
+            updateTimestamp(playDate);
+        }
+
+        window.startLottery = async function() {
+            if (hasPlayed) {
+                alert('既に抽選済みです。お一人様1回限りです！');
+                return;
+            }
+
+            const button = document.getElementById('lotteryBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            const result = document.getElementById('result');
+            
+            button.disabled = true;
+            button.textContent = '抽選中...';
+            
+            resultContainer.classList.add('spinning');
+            
+            setTimeout(async () => {
+                resultContainer.classList.remove('spinning');
+                
+                const isWin = Math.random() < currentWinRate;
+                const now = new Date();
+                
+                // Firebaseに結果を記録
+                try {
+                    // 参加者数を更新
+                    const newParticipants = currentStats.participants + 1;
+                    const newWinners = currentStats.winners + (isWin ? 1 : 0);
+                    
+                    await set(statsRef, {
+                        participants: newParticipants,
+                        winners: newWinners
+                    });
+
+                    // 当選者の場合は詳細データも記録
+                    if (isWin) {
+                        const winnersRef = ref(database, 'lottery/winners');
+                        await push(winnersRef, {
+                            timestamp: now.toISOString(),
+                            participantNumber: newParticipants,
+                            winRate: currentWinRate
+                        });
+                    }
+                } catch (error) {
+                    console.error('Firebase書き込みエラー:', error);
+                }
+                
+                // ローカルストレージに記録
+                localStorage.setItem('lastLotteryPlay', now.toISOString());
+                localStorage.setItem('lastLotteryResult', isWin ? 'win' : 'lose');
+                
+                if (isWin) {
+                    result.innerHTML = `
+                        <div>
+                            <div class="win-text">当選！</div>
+                            <p class="message win-message">
+                                おめでとうございます！🎉<br>
+                                このスクショを送ってください
+                            </p>
+                        </div>
+                    `;
+                    result.classList.add('win');
+                    createConfetti();
+                } else {
+                    result.innerHTML = `
+                        <div>
+                            <div class="lose-text">はずれ</div>
+                            <p class="message">
+                                残念でした...<br>
+                                また次回チャレンジしてください！
+                            </p>
+                        </div>
+                    `;
+                }
+                
+                result.classList.add('show');
+                button.style.display = 'none';
+                document.querySelector('.reset-button').style.display = 'block';
+                updateTimestamp(now);
+                hasPlayed = true;
+                
+            }, 2000);
+        };
+
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'];
+            const container = document.querySelector('.container');
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 80 + 10 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = Math.random() * 8 + 4 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    confetti.style.animationDuration = Math.random() * 1.5 + 1.5 + 's';
+                    container.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3500);
+                }, i * 20);
+            }
+        }
+
+        function updateTimestamp(date) {
+            const timestamp = document.getElementById('timestamp');
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            timestamp.textContent = date.toLocaleString('ja-JP', options);
+        }
+
+        window.resetLottery = function() {
+            if (confirm('履歴をリセットしますか？（デバッグ用）')) {
+                localStorage.removeItem('lastLotteryPlay');
+                localStorage.removeItem('lastLotteryResult');
+                location.reload();
+            }
+        };
+
+        window.onload = function() {
+            checkIfAlreadyPlayed();
+        };
+    </script>
+</body>
+</html>
